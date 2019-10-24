@@ -186,12 +186,6 @@ void pruferString(int arr[],int size, int degree)
 
 }
 
-/**
-/*displayArray: Display the elements of an array.
-/*@pre: size is the size of the input array
-/*@param: an integer array arr, the integer size of the array
-/*@post: The elements of the array are displayed, delimited by spaces.
-*/
 void displayArray(int arr[], int size)
 {
 	for(int i = 0; i < size; i++)
