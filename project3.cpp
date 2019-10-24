@@ -18,7 +18,6 @@ int getFitness(int[],int, int[][SIZE]);
 void blobDecode(int[], int, int[][2]);
 bool path(int,int,int[][2],int[]);
 
-
 int main()
 {
 	//Seeding for random number generation
@@ -35,7 +34,6 @@ int main()
 			adjacencyList[j][i] = adjacencyList[i][j]; //non-directional adjacency lists are always symmetric
 		}
 	}
-
 
 	//Initialize a population of Prufer strings that meet the 
 	//degree constraint requirements (set in MAX_DEGREE constant)
@@ -74,6 +72,7 @@ int main()
 	}
 
 	//2. RECOMBINE PARENTS TO GET CHILD POPULATION
+	int childPopulation[POP_SIZE][SIZE-2];	
 	for (int i = 0; i < POP_SIZE; i++)
 	{
 		//2a.SELECT TWO RANDOM PARENTS FROM THE PARENT POPULATION
@@ -83,29 +82,29 @@ int main()
 		int count1[SIZE];
 		int count2[SIZE];
 		int maxCount[SIZE];
-		for (int i = 0; i<SIZE; i++)
+		for (int k = 0; k<SIZE; k++)
 		{
 			int c1 = 0;
 			int c2 = 0;
 			for (int j = 0; j<SIZE-2;j++)
 			{
-				if (i==parentPopulation[parentIndex3][j])
+				if (k==parentPopulation[parentIndex3][j])
 					c1++;
-				if (i==parentPopulation[parentIndex4][j])
+				if (k==parentPopulation[parentIndex4][j])
 					c2++;
 			}
-			count1[i] = c1;
-			count2[i] = c2;
-			maxCount[i] = max(c1,c2);
+			count1[k] = c1;
+			count2[k] = c2;
+			maxCount[k] = max(c1,c2);
 		}
-		//2c.CONDUCT CYCLE CROSSOVER 
+		//2c.CONDUCT MODIFIED CYCLE CROSSOVER 
 		int randSpot1 = rand() % (SIZE-2);
 		int randSpot2 = rand() % (SIZE-2);
 		if (randSpot1 == randSpot2)
 			randSpot2 = (randSpot2 + 1) % (SIZE-2);
 		int c1 = min(randSpot1,randSpot2);
 		int c2 = max(randSpot1,randSpot2);
-		if (i = POP_SIZE)
+		if (i == POP_SIZE-1)
 		{
 			cout << "c1 is " << c1 << endl;
 			cout << "c2 is " << c2 << endl;
@@ -113,17 +112,13 @@ int main()
 			displayArray(parentPopulation[parentIndex4], SIZE-2);
 		}
 		int newChromosome[SIZE-2];
-		for (int i = c1; i <= c2; i++)
+		for (int k = c1; k <= c2; k++)
 		{
-			newChromosome[i]= parentPopulation[parentIndex3][i];
-			maxCount[newChromosome[i]]--;
+			newChromosome[k]= parentPopulation[parentIndex3][k];
+			maxCount[newChromosome[k]]--;
 		}
 		int j = ((c2+1)%(SIZE-2));
 		int currentParentIndex = (c2+1)%(SIZE-2);
-		if (i = SIZE)
-		{
-			cout << j << " " << currentParentIndex << endl;
-		}
 		while (j%(SIZE-2) != c1)
 		{
 			if (maxCount[parentPopulation[parentIndex4][currentParentIndex % (SIZE-2)]] > 0)
@@ -134,16 +129,16 @@ int main()
 			}
 			else
 				currentParentIndex++;
-			cout << "j is " << j << endl;
-			cout << "currentParentIndex is " << currentParentIndex << endl;
 		}
-		if (i = POP_SIZE)
+		if (i == POP_SIZE-1)
 		{
 			displayArray(newChromosome, SIZE-2);
 		}	
-
 		//2d.PLACE CHILD CHROMOSOME INTO CHILD POPULATION
-		//2f. REPEAT 2(a-f) UNTIL CHILD POPULATION HAS POP_SIZE MEMBERS
+		for (int j = 0; j < SIZE-2;j++)
+		{
+			childPopulation[i][j] = newChromosome[j];
+		}
 	}
 	//3. MUTATE CHILD POPULATION
 	//3a. FOR EVERY MEMBER IN CHILD POPULATION, DO THE FOLLOWING
@@ -155,15 +150,6 @@ int main()
 	return 0;
 }
 
-/**
-/*pruferString: Change an input array into a Prufer string satisfying
-/*the input degree constraints.
-/*@pre: degree <= size
-/*@param: An integer array arr; an integer size equal to the size of
-/*the array; a degree constraint (number of allowed repetitions in string)
-/*@post: A Prufer string of the size of the original array whose degree
-/*constraint meets that set by the third parameter.
-*/
 void pruferString(int arr[],int size, int degree)
 {
 	int degreeTracker[size];
