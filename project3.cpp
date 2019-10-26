@@ -13,6 +13,7 @@ const int MAX_EDGE_WEIGHT = 10; //Maximum weight for a single edge
 const int MUTATION_PROBABILITY = 100; //Reciprocal of probability for mutation.
 const int NUM_GENERATIONS = 1000;
 const int RUNS_PER_INSTANCE = 30;
+const int NUM_INSTANCES = 10;
 
 //Function declarations
 void pruferString(int[],int, int);
@@ -28,171 +29,196 @@ int main()
 	srand((unsigned int)time(NULL));
 	double averages[NUM_GENERATIONS];
 	int minima[NUM_GENERATIONS];
+	double minAverages[RUNS_PER_INSTANCE];
+	int globalMinima[RUNS_PER_INSTANCE];
+	double instanceMinAverages[NUM_INSTANCES];
+	int instanceGlobalMinima[NUM_INSTANCES];
 	ofstream output1("averages.dat");
 	ofstream output2("minima.dat");
 	//Create a random adjacency list for the connected graph
 	int adjacencyList[SIZE][SIZE];
-	for(int i = 0; i < SIZE; i++)
+	int instanceNum = 0;
+	while (instanceNum < NUM_INSTANCES)
 	{
-		adjacencyList[i][i] = 0; //no vertex is connected to itself
-		for(int j = i+1; j < SIZE; j++)
+		for(int i = 0; i < SIZE; i++)
 		{
-			adjacencyList[i][j] = rand() % MAX_EDGE_WEIGHT + 1; //+1 ensures weight > 0 for i != j, so the graph is connected
-			adjacencyList[j][i] = adjacencyList[i][j]; //non-directional adjacency lists are always symmetric
-		}
-	}
-
-	int runNum = 0;
-	while(runNum < RUNS_PER_INSTANCE)
-	{
-		//Initialize a population of Prufer strings that meet the 
-		//degree constraint requirements (set in MAX_DEGREE constant)
-		int population[POP_SIZE][SIZE - 2];	
-		for (int i = 0; i < POP_SIZE; i++)
-		{
-			pruferString(population[i], SIZE, MAX_DEGREE);
-		}
-
-
-		//WHILE (GENERATION < TOTALGENERATIONS)
-		int genNum = 0;
-		while(genNum < NUM_GENERATIONS)
-		{
-			//Get some basic statistics about the population
-			cout << "Generation Number: " << genNum << endl;
-			int sum = 0;
-			double avg = 0;
-			int minElement = getFitness(population[0],SIZE,adjacencyList);
-			for (int i = 0; i<POP_SIZE; i++)
+			adjacencyList[i][i] = 0; //no vertex is connected to itself
+			for(int j = i+1; j < SIZE; j++)
 			{
-				int c = getFitness(population[i],SIZE,adjacencyList);
-				sum += c;
-				if (minElement > c)
-					minElement = c;
+				adjacencyList[i][j] = rand() % MAX_EDGE_WEIGHT + 1; //+1 ensures weight > 0 for i != j, so the graph is connected
+				adjacencyList[j][i] = adjacencyList[i][j]; //non-directional adjacency lists are always symmetric
 			}
-			avg = sum / POP_SIZE;
-			averages[genNum] = avg;
-			minima[genNum] = minElement;
-			cout << "Average fitness: " << avg << endl;	
-			cout << "Minimum: " << minElement << endl;
-			//1. CONDUCT TWO-TOURNAMENT SELECTION OF PARENTS
-			int parentPopulation[POP_SIZE][SIZE-2];
+		}
+		int runNum = 0;
+		while(runNum < RUNS_PER_INSTANCE)
+		{
+			//Initialize a population of Prufer strings that meet the 
+			//degree constraint requirements (set in MAX_DEGREE constant)
+			int population[POP_SIZE][SIZE - 2];	
 			for (int i = 0; i < POP_SIZE; i++)
 			{
-				//1a. SELECT TWO PARENTS AT RANDOM
-				int parentIndex1 = rand() % POP_SIZE;
-				int parentIndex2 = rand() % POP_SIZE;
-				//1b. PLACE PARENT WITH HIGHER FITNESS INTO PARENT POPULATION
-				if (getFitness(population[parentIndex1],SIZE,adjacencyList)<=getFitness(population[parentIndex2],SIZE,adjacencyList))
-				{	
-					for(int j = 0; j< SIZE - 2; j++)
-						parentPopulation[i][j] = population[parentIndex1][j];
-				}
-				else
-				{
-					for(int j = 0; j < SIZE - 2; j++)
-						parentPopulation[i][j] = population[parentIndex2][j];
-				}
+				pruferString(population[i], SIZE, MAX_DEGREE);
 			}
 
-			//2. RECOMBINE PARENTS TO GET CHILD POPULATION
-			int childPopulation[POP_SIZE][SIZE-2];	
-			for (int i = 0; i < POP_SIZE; i++)
+
+			//WHILE (GENERATION < TOTALGENERATIONS)
+			int genNum = 0;
+			while(genNum < NUM_GENERATIONS)
 			{
-				//2a.SELECT TWO RANDOM PARENTS FROM THE PARENT POPULATION
-				int parentIndex3 = rand() % POP_SIZE;
-				int parentIndex4 = rand() % POP_SIZE;
-				//2b.AUGMENT PARENTAL CHROMOSOMES WITH DEGREE COUNT
-				int count1[SIZE];
-				int count2[SIZE];
-				int maxCount[SIZE];
-				for (int k = 0; k<SIZE; k++)
+				//Get some basic statistics about the population
+				cout << "Instance Number: " << instanceNum + 1 << endl;
+				cout << "Run Number: " << runNum + 1 << endl;
+				cout << "Generation Number: " << genNum + 1 << endl;
+				int sum = 0;
+				double avg = 0;
+				int minElement = getFitness(population[0],SIZE,adjacencyList);
+				for (int i = 0; i<POP_SIZE; i++)
 				{
-					int c1 = 0;
-					int c2 = 0;
-					for (int j = 0; j<SIZE-2;j++)
-					{
-						if (k==parentPopulation[parentIndex3][j])
-							c1++;
-						if (k==parentPopulation[parentIndex4][j])
-							c2++;
-					}
-					count1[k] = c1;
-					count2[k] = c2;
-					maxCount[k] = max(c1,c2);
+					int c = getFitness(population[i],SIZE,adjacencyList);
+					sum += c;
+					if (minElement > c)
+						minElement = c;
 				}
-				//2c.CONDUCT MODIFIED CYCLE CROSSOVER 
-				int randSpot1 = rand() % (SIZE-2);
-				int randSpot2 = rand() % (SIZE-2);
-				if (randSpot1 == randSpot2)
-					randSpot2 = (randSpot2 + 1) % (SIZE-2);
-				int c1 = min(randSpot1,randSpot2);
-				int c2 = max(randSpot1,randSpot2);
-				int newChromosome[SIZE-2];
-				for (int k = c1; k <= c2; k++)
+				avg = sum / POP_SIZE;
+				averages[genNum] = avg;
+				minima[genNum] = minElement;
+				cout << "Average fitness: " << avg << endl;	
+				cout << "Minimum: " << minElement << endl;
+				//1. CONDUCT TWO-TOURNAMENT SELECTION OF PARENTS
+				int parentPopulation[POP_SIZE][SIZE-2];
+				for (int i = 0; i < POP_SIZE; i++)
 				{
-					newChromosome[k]= parentPopulation[parentIndex3][k];
-					maxCount[newChromosome[k]]--;
-				}
-				int j = ((c2+1)%(SIZE-2));
-				int currentParentIndex = (c2+1)%(SIZE-2);
-				while (j%(SIZE-2) != c1)
-				{
-					if (maxCount[parentPopulation[parentIndex4][currentParentIndex % (SIZE-2)]] > 0)
-					{
-						newChromosome[j%(SIZE-2)] = parentPopulation[parentIndex4][currentParentIndex % (SIZE-2)];
-						j++;
-						currentParentIndex++;
+					//1a. SELECT TWO PARENTS AT RANDOM
+					int parentIndex1 = rand() % POP_SIZE;
+					int parentIndex2 = rand() % POP_SIZE;
+					//1b. PLACE PARENT WITH HIGHER FITNESS INTO PARENT POPULATION
+					if (getFitness(population[parentIndex1],SIZE,adjacencyList)<=getFitness(population[parentIndex2],SIZE,adjacencyList))
+					{	
+						for(int j = 0; j< SIZE - 2; j++)
+							parentPopulation[i][j] = population[parentIndex1][j];
 					}
 					else
-						currentParentIndex++;
+					{
+						for(int j = 0; j < SIZE - 2; j++)
+							parentPopulation[i][j] = population[parentIndex2][j];
+					}
 				}
-				//2d.PLACE CHILD CHROMOSOME INTO CHILD POPULATION
-				for (int j = 0; j < SIZE-2;j++)
+
+				//2. RECOMBINE PARENTS TO GET CHILD POPULATION
+				int childPopulation[POP_SIZE][SIZE-2];	
+				for (int i = 0; i < POP_SIZE; i++)
 				{
-					childPopulation[i][j] = newChromosome[j];
-				}
-			}
-			//3. MUTATE CHILD POPULATION
-			for (int i = 0; i < POP_SIZE; i++)
-			{
-				for(int j = 0; j < SIZE-2; j++)
-				{
-					int randInt = rand() % MUTATION_PROBABILITY; 
-					if (randInt == 1)
-					{	
-						int count = 0;
-						for(int k = 0; k < SIZE-2; k++)
+					//2a.SELECT TWO RANDOM PARENTS FROM THE PARENT POPULATION
+					int parentIndex3 = rand() % POP_SIZE;
+					int parentIndex4 = rand() % POP_SIZE;
+					//2b.AUGMENT PARENTAL CHROMOSOMES WITH DEGREE COUNT
+					int count1[SIZE];
+					int count2[SIZE];
+					int maxCount[SIZE];
+					for (int k = 0; k<SIZE; k++)
+					{
+						int c1 = 0;
+						int c2 = 0;
+						for (int j = 0; j<SIZE-2;j++)
 						{
-							if ((childPopulation[i][j]+1)%SIZE==childPopulation[i][k])
-								count++;
+							if (k==parentPopulation[parentIndex3][j])
+								c1++;
+							if (k==parentPopulation[parentIndex4][j])
+								c2++;
 						}
-						if (count < MAX_DEGREE)
+						count1[k] = c1;
+						count2[k] = c2;
+						maxCount[k] = max(c1,c2);
+					}
+					//2c.CONDUCT MODIFIED CYCLE CROSSOVER 
+					int randSpot1 = rand() % (SIZE-2);
+					int randSpot2 = rand() % (SIZE-2);
+					if (randSpot1 == randSpot2)
+						randSpot2 = (randSpot2 + 1) % (SIZE-2);
+					int c1 = min(randSpot1,randSpot2);
+					int c2 = max(randSpot1,randSpot2);
+					int newChromosome[SIZE-2];
+					for (int k = c1; k <= c2; k++)
+					{
+						newChromosome[k]= parentPopulation[parentIndex3][k];
+						maxCount[newChromosome[k]]--;
+					}
+					int j = ((c2+1)%(SIZE-2));
+					int currentParentIndex = (c2+1)%(SIZE-2);
+					while (j%(SIZE-2) != c1)
+					{
+						if (maxCount[parentPopulation[parentIndex4][currentParentIndex % (SIZE-2)]] > 0)
 						{
-							childPopulation[i][j] = (childPopulation[i][j]+1)%SIZE;
+							newChromosome[j%(SIZE-2)] = parentPopulation[parentIndex4][currentParentIndex % (SIZE-2)];
+							j++;
+							currentParentIndex++;
+						}
+						else
+							currentParentIndex++;
+					}
+					//2d.PLACE CHILD CHROMOSOME INTO CHILD POPULATION
+					for (int j = 0; j < SIZE-2;j++)
+					{
+						childPopulation[i][j] = newChromosome[j];
+					}
+				}
+				//3. MUTATE CHILD POPULATION
+				for (int i = 0; i < POP_SIZE; i++)
+				{
+					for(int j = 0; j < SIZE-2; j++)
+					{
+						int randInt = rand() % MUTATION_PROBABILITY; 
+						if (randInt == 1)
+						{	
+							int count = 0;
+							for(int k = 0; k < SIZE-2; k++)
+							{
+								if ((childPopulation[i][j]+1)%SIZE==childPopulation[i][k])
+									count++;
+							}
+							if (count < MAX_DEGREE)
+							{
+								childPopulation[i][j] = (childPopulation[i][j]+1)%SIZE;
+							}
 						}
 					}
 				}
-			}
-			//4. SET POPULATION TO CHILD POPULATION
-			for (int i = 0; i < POP_SIZE; i++)
-			{
-				for (int j = 0; j < SIZE-2; j++)
+				//4. SET POPULATION TO CHILD POPULATION
+				for (int i = 0; i < POP_SIZE; i++)
 				{
-					population[i][j] = childPopulation[i][j];
+					for (int j = 0; j < SIZE-2; j++)
+					{
+						population[i][j] = childPopulation[i][j];
+					}
 				}
+				//5. GENERATION += 1, REPEAT WHILE LOOP
+				genNum++;
 			}
-			//5. GENERATION += 1, REPEAT WHILE LOOP
-			genNum++;
+			double minimumAverage = averages[0];
+			int globalMinimum = minima[0];	
+			for(int i = 0; i < NUM_GENERATIONS; i++)
+			{
+				if (minimumAverage > averages[i])
+					minimumAverage = averages[i];
+				if (globalMinimum > minima[i])
+					globalMinimum = minima[i];	
+				output1 << averages[i] << "\n";
+				output2 << minima[i] << "\n";
+			}
+			minAverages[runNum] = minimumAverage;
+			globalMinima[runNum] = globalMinimum;
+			runNum++;
 		}
-		
-		for(int i = 0; i < NUM_GENERATIONS; i++)
+		double instanceMinAverage = minAverages[0];
+		int instanceGlobalMinimum = globalMinima[0];
+		for (int i = 0; i < RUNS_PER_INSTANCE; i++)
 		{
-			
-			output1 << averages[i] << "\n";
-			output2 << minima[i] << "\n";
+			if (instanceMinAverage > minAverages[i])
+				instanceMinAverage = minAverages[i];
+			if (instanceGlobalMinimum > globalMinima[i])
+				instanceGlobalMinimum = globalMinima[i];
 		}
-		runNum++;
+		instanceNum++;
 	}
 	output1.close();
 	output2.close();
