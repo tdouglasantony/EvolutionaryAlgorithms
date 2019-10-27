@@ -22,19 +22,28 @@ int getFitness(int[],int, int[][SIZE]);
 void blobDecode(int[], int, int[][2]);
 bool path(int,int,int[][2],int[]);
 void displayArray(double arr[], int size);
+void generateNeighbors(int [SIZE-2], int [2*(SIZE-2)][SIZE-2], int );
 
 int main()
 {
 	//Seeding for random number generation
 	srand((unsigned int)time(NULL));
+
+	//Data collection arrays
 	double averages[NUM_GENERATIONS];
 	int minima[NUM_GENERATIONS];
 	double minAverages[RUNS_PER_INSTANCE];
 	int globalMinima[RUNS_PER_INSTANCE];
 	double instanceMinAverages[NUM_INSTANCES];
 	int instanceGlobalMinima[NUM_INSTANCES];
+
 	ofstream output1("averages.dat");
 	ofstream output2("minima.dat");
+	ofstream output3("minAverages.dat");
+	ofstream output4("globalMinima.dat");
+	ofstream output5("instanceMinAverages.dat");
+	ofstream output6("instanceGlobalMinima.dat");
+	
 	//Create a random adjacency list for the connected graph
 	int adjacencyList[SIZE][SIZE];
 	int instanceNum = 0;
@@ -59,8 +68,15 @@ int main()
 			{
 				pruferString(population[i], SIZE, MAX_DEGREE);
 			}
-
-
+			
+			//Set initial Tabu Prufer string to first element of generated population.
+			int currentTabu[SIZE-2];
+			int tabuList[SIZE-2];
+			for (int i = 0; i < SIZE-2; i++)
+			{
+				currentTabu[i] = population[0][i];
+				tabuList[i] = 0;
+			}
 			//WHILE (GENERATION < TOTALGENERATIONS)
 			int genNum = 0;
 			while(genNum < NUM_GENERATIONS)
@@ -191,7 +207,31 @@ int main()
 						population[i][j] = childPopulation[i][j];
 					}
 				}
-				//5. GENERATION += 1, REPEAT WHILE LOOP
+				
+				//5. RUN TABU SEARCH ITERATION
+				//Generate neighbor list of current Tabu
+				int neighborList[2*(SIZE-2)][SIZE-2];
+				generateNeighbors(currentTabu, neighborList, SIZE);
+				//Replace currentTabu with the best neighbor that meets constraint requirements
+				int replaceIndex = 0;
+				for (int z = 0; z < 2*(SIZE-2); z++)
+				{
+					if((getFitness(neighborList[replaceIndex], SIZE, adjacencyList)>getFitness(neighborList[z],SIZE, adjacencyList)) && tabuList[z%(SIZE-2)]<=0)
+					{
+						replaceIndex = z;
+					}
+				}
+				tabuList[replaceIndex%(SIZE-2)] = 35;
+				for (int x = 0; x < SIZE-2; x++)
+					tabuList[x]--;
+				for (int z = 0; z < SIZE-2; z++)
+				{
+					currentTabu[z] = neighborList[replaceIndex][z];
+				}
+				displayArray(currentTabu, SIZE-2);
+				displayArray(tabuList, SIZE-2);
+				//Add operation to the Tabu list
+				//6. GENERATION += 1, REPEAT WHILE LOOP
 				genNum++;
 			}
 			double minimumAverage = averages[0];
@@ -207,6 +247,8 @@ int main()
 			}
 			minAverages[runNum] = minimumAverage;
 			globalMinima[runNum] = globalMinimum;
+			output3 << minAverages[runNum] << endl;
+			output4 << globalMinima[runNum] << endl;
 			runNum++;
 		}
 		double instanceMinAverage = minAverages[0];
@@ -218,10 +260,16 @@ int main()
 			if (instanceGlobalMinimum > globalMinima[i])
 				instanceGlobalMinimum = globalMinima[i];
 		}
+		output5 << instanceMinAverage << endl;
+		output6 << instanceGlobalMinimum << endl;
 		instanceNum++;
 	}
 	output1.close();
 	output2.close();
+	output3.close();
+	output4.close();
+	output5.close();
+	output6.close();
 
 	return 0;
 }
@@ -334,3 +382,29 @@ bool path(int a,int size,int edgeList[][2],int blob[])
 	}
 	return false;
 }
+
+void generateNeighbors(int pruferString[SIZE-2], int neighborList[2*(SIZE-2)][SIZE-2], int size)
+{
+	int currentNeighbor[size-2];
+	for (int i = 0; i < 2*(size-2); i++)
+	{
+		for (int j = 0; j < size-2;j++)	
+		{
+			if((j%(size-2)) != (i%(size-2)))
+				currentNeighbor[j] = pruferString[j];
+			else
+			{
+				if (i < size-2)
+					currentNeighbor[j] = (pruferString[j]+1)%(size);
+				else
+					currentNeighbor[j] = (pruferString[j]-1 + size)%(size);
+			}
+
+		}
+		for (int k = 0; k<size-2;k++)
+		{
+			neighborList[i][k] = currentNeighbor[k];
+		}
+	}
+}
+
