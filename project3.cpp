@@ -8,7 +8,7 @@ using namespace std;
 //Some parameters for the simulation
 const int POP_SIZE = 100; //population size
 const int SIZE = 40; //The number of members in each tree
-const int MAX_DEGREE = 7; //The degree constraint
+const int MAX_DEGREE = 4; //The degree constraint
 const int MAX_EDGE_WEIGHT = 10; //Maximum weight for a single edge
 const int MUTATION_PROBABILITY = 100; //Reciprocal of probability for mutation.
 const int NUM_GENERATIONS = 1000;
@@ -23,6 +23,8 @@ void blobDecode(int[], int, int[][2]);
 bool path(int,int,int[][2],int[]);
 void displayArray(double arr[], int size);
 void generateNeighbors(int [SIZE-2], int [2*(SIZE-2)][SIZE-2], int );
+bool meetsConstraint(int [], int);
+
 
 int main()
 {
@@ -36,6 +38,9 @@ int main()
 	int globalMinima[RUNS_PER_INSTANCE];
 	double instanceMinAverages[NUM_INSTANCES];
 	int instanceGlobalMinima[NUM_INSTANCES];
+	int tabuMinima[NUM_GENERATIONS];
+	int tabuRunMinima[RUNS_PER_INSTANCE];
+	int instanceTabuMinima[NUM_INSTANCES];
 
 	ofstream output1("averages.dat");
 	ofstream output2("minima.dat");
@@ -43,6 +48,8 @@ int main()
 	ofstream output4("globalMinima.dat");
 	ofstream output5("instanceMinAverages.dat");
 	ofstream output6("instanceGlobalMinima.dat");
+	ofstream output7("runTabuMinima.dat");
+	ofstream output8("instanceTabuMinima.dat");
 	
 	//Create a random adjacency list for the connected graph
 	int adjacencyList[SIZE][SIZE];
@@ -218,7 +225,7 @@ int main()
 				int replaceIndex = 0;
 				for (int z = 0; z < 2*(SIZE-2); z++)
 				{
-					if((getFitness(neighborList[replaceIndex], SIZE, adjacencyList)>getFitness(neighborList[z],SIZE, adjacencyList)) && tabuList[z%(SIZE-2)]<=0)
+					if((getFitness(neighborList[replaceIndex], SIZE, adjacencyList)>getFitness(neighborList[z],SIZE, adjacencyList)) && (tabuList[z%(SIZE-2)]<=0) && meetsConstraint(neighborList[replaceIndex], SIZE))
 					{
 						replaceIndex = z;
 					}
@@ -231,38 +238,48 @@ int main()
 					currentTabu[z] = neighborList[replaceIndex][z];
 				}
 				displayArray(currentTabu, SIZE-2);
+				tabuMinima[genNum]=getFitness(currentTabu, SIZE, adjacencyList);
 				//Add operation to the Tabu list
 				//6. GENERATION += 1, REPEAT WHILE LOOP
 				genNum++;
 			}
 			double minimumAverage = averages[0];
-			int globalMinimum = minima[0];	
+			int globalMinimum = minima[0];
+			int tabuRunMinimum = tabuMinima[0];	
 			for(int i = 0; i < NUM_GENERATIONS; i++)
 			{
 				if (minimumAverage > averages[i])
 					minimumAverage = averages[i];
 				if (globalMinimum > minima[i])
 					globalMinimum = minima[i];	
+				if (tabuRunMinimum > tabuMinima[i])
+					tabuRunMinimum = tabuMinima[i];
 				output1 << averages[i] << "\n";
 				output2 << minima[i] << "\n";
 			}
 			minAverages[runNum] = minimumAverage;
 			globalMinima[runNum] = globalMinimum;
-			output3 << minAverages[runNum] << endl;
+			tabuRunMinima[runNum] = tabuRunMinimum;
+			output3 << minAverages[runNum]<< endl;
 			output4 << globalMinima[runNum] << endl;
+			output7 << tabuRunMinima[runNum] << endl;
 			runNum++;
 		}
 		double instanceMinAverage = minAverages[0];
 		int instanceGlobalMinimum = globalMinima[0];
+		int tabuInstanceMinimum = tabuRunMinima[0];
 		for (int i = 0; i < RUNS_PER_INSTANCE; i++)
 		{
 			if (instanceMinAverage > minAverages[i])
 				instanceMinAverage = minAverages[i];
 			if (instanceGlobalMinimum > globalMinima[i])
 				instanceGlobalMinimum = globalMinima[i];
+			if (tabuInstanceMinimum > tabuRunMinima[i])
+				tabuInstanceMinimum = tabuRunMinima[i];
 		}
 		output5 << instanceMinAverage << endl;
 		output6 << instanceGlobalMinimum << endl;
+		output8 << tabuInstanceMinimum << endl;
 		instanceNum++;
 	}
 	output1.close();
@@ -271,6 +288,7 @@ int main()
 	output4.close();
 	output5.close();
 	output6.close();
+	output7.close();
 
 	return 0;
 }
@@ -295,6 +313,22 @@ void pruferString(int arr[],int size, int degree)
 		}	
 	}
 
+}
+
+bool meetsConstraint(int pruferString[], int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		int currentDegree = 0;
+		for(int j = 0;j<size-2;j++)
+		{
+			if (pruferString[j] == i)
+				currentDegree++;
+		}
+		if (currentDegree > MAX_DEGREE)
+			return false;
+	}
+	return true;
 }
 
 void displayArray(int arr[], int size)
