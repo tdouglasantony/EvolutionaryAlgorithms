@@ -87,6 +87,7 @@ int main()
 				cout << "Generation Number: " << genNum + 1 << endl;
 				int sum = 0;
 				double avg = 0;
+				int tabuFitness = getFitness(currentTabu, SIZE, adjacencyList);
 				int minElement = getFitness(population[0],SIZE,adjacencyList);
 				for (int i = 0; i<POP_SIZE; i++)
 				{
@@ -100,6 +101,7 @@ int main()
 				minima[genNum] = minElement;
 				cout << "Average fitness: " << avg << endl;	
 				cout << "Minimum: " << minElement << endl;
+				cout << "Tabu Fitness: " << tabuFitness << endl;
 				//1. CONDUCT TWO-TOURNAMENT SELECTION OF PARENTS
 				int parentPopulation[POP_SIZE][SIZE-2];
 				for (int i = 0; i < POP_SIZE; i++)
@@ -229,7 +231,6 @@ int main()
 					currentTabu[z] = neighborList[replaceIndex][z];
 				}
 				displayArray(currentTabu, SIZE-2);
-				displayArray(tabuList, SIZE-2);
 				//Add operation to the Tabu list
 				//6. GENERATION += 1, REPEAT WHILE LOOP
 				genNum++;
