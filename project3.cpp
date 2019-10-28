@@ -16,7 +16,7 @@ const int RUNS_PER_INSTANCE = 30;
 const int NUM_INSTANCES = 10;
 
 //Function declarations
-void pruferString(int[],int, int);
+ void pruferString(int[],int, int);
 void displayArray(int[],int);
 int getFitness(int[],int, int[][SIZE]);
 void blobDecode(int[], int, int[][2]);
@@ -24,7 +24,6 @@ bool path(int,int,int[][2],int[]);
 void displayArray(double arr[], int size);
 void generateNeighbors(int [SIZE-2], int [2*(SIZE-2)][SIZE-2], int );
 bool meetsConstraint(int [], int);
-
 
 int main()
 {
@@ -41,6 +40,7 @@ int main()
 	int tabuMinima[NUM_GENERATIONS];
 	int tabuRunMinima[RUNS_PER_INSTANCE];
 	int instanceTabuMinima[NUM_INSTANCES];
+	double averageRunTabuMinima[RUNS_PER_INSTANCE];
 
 	ofstream output1("averages.dat");
 	ofstream output2("minima.dat");
@@ -50,6 +50,7 @@ int main()
 	ofstream output6("instanceGlobalMinima.dat");
 	ofstream output7("runTabuMinima.dat");
 	ofstream output8("instanceTabuMinima.dat");
+	ofstream output9("averageRunTabuMinima.dat");
 	
 	//Create a random adjacency list for the connected graph
 	int adjacencyList[SIZE][SIZE];
@@ -245,7 +246,7 @@ int main()
 			}
 			double minimumAverage = averages[0];
 			int globalMinimum = minima[0];
-			int tabuRunMinimum = tabuMinima[0];	
+			int tabuRunMinimum = tabuMinima[0];
 			for(int i = 0; i < NUM_GENERATIONS; i++)
 			{
 				if (minimumAverage > averages[i])
@@ -265,11 +266,13 @@ int main()
 			output7 << tabuRunMinima[runNum] << endl;
 			runNum++;
 		}
+		int tabuRunSum = 0;
 		double instanceMinAverage = minAverages[0];
 		int instanceGlobalMinimum = globalMinima[0];
 		int tabuInstanceMinimum = tabuRunMinima[0];
 		for (int i = 0; i < RUNS_PER_INSTANCE; i++)
 		{
+			tabuRunSum += tabuRunMinima[i];
 			if (instanceMinAverage > minAverages[i])
 				instanceMinAverage = minAverages[i];
 			if (instanceGlobalMinimum > globalMinima[i])
@@ -277,9 +280,14 @@ int main()
 			if (tabuInstanceMinimum > tabuRunMinima[i])
 				tabuInstanceMinimum = tabuRunMinima[i];
 		}
+		double avgRunTabu = static_cast<double>(tabuRunSum)/RUNS_PER_INSTANCE;
+		instanceGlobalMinima[instanceNum] = instanceGlobalMinimum;
+		instanceMinAverages[instanceNum] = instanceMinAverage; 
+		instanceTabuMinima[instanceNum] = tabuInstanceMinimum;
 		output5 << instanceMinAverage << endl;
 		output6 << instanceGlobalMinimum << endl;
 		output8 << tabuInstanceMinimum << endl;
+		output9 << avgRunTabu;
 		instanceNum++;
 	}
 	output1.close();
@@ -442,4 +450,3 @@ void generateNeighbors(int pruferString[SIZE-2], int neighborList[2*(SIZE-2)][SI
 		}
 	}
 }
-
