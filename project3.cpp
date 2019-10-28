@@ -287,7 +287,7 @@ int main()
 		output5 << instanceMinAverage << endl;
 		output6 << instanceGlobalMinimum << endl;
 		output8 << tabuInstanceMinimum << endl;
-		output9 << avgRunTabu;
+		output9 << avgRunTabu << endl;
 		instanceNum++;
 	}
 	output1.close();
